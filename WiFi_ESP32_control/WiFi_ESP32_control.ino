@@ -1,10 +1,7 @@
 #include <WiFi.h>
-
-#include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiMulti.h>
 #include <WebServer.h>
-#include <ESPmDNS.h>
 
 WiFiMulti WiFiMulti;
 
@@ -87,10 +84,6 @@ void setup(void) {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-
-  if (MDNS.begin("esp32")) {
-    Serial.println("MDNS responder started");
-  }
 
   server.on("/", handleRoot);
 

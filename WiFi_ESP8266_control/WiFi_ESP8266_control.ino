@@ -3,20 +3,22 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
-const char* ssid = "ACFun_2.4G";
-const char* password = "fuckgfww";
+
+//const char* ssid = "ACFun_2.4G";
+//const char* password = "fuckgfww";
+const char* ssid = "360WiFi-902905";
+const char* password = "1122334455";
 
 ESP8266WebServer server(80);
 
 WiFiEventHandler gotIpEventHandler, disconnectedEventHandler;
-
 // Ports
-const char PORT_RELAY1 = 13;
-const char PORT_RELAY2 = 12;
-const char PORT_RELAY3 = 11;
-const char PORT_RELAY4 = 10;
-const char PORT_RELAY5 = 9;
-const char PORT_RELAY6 = 8;
+const char PORT_RELAY1 = 15;
+const char PORT_RELAY2 = 13;
+const char PORT_RELAY3 = 12;
+const char PORT_RELAY4 = 14;
+const char PORT_RELAY5 = 0;
+const char PORT_RELAY6 = 4;
 
 // Constants
 const char RELAY_ON = 0;  // Relay on
@@ -46,7 +48,7 @@ void setup()
   Serial.println();
 
   pinMode(LED_BUILTIN, OUTPUT);
-  //setupPinMode();
+  setupPinMode();
 
   gotIpEventHandler = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event)
   {
@@ -81,65 +83,66 @@ void setup()
     server.send(200, "text/plain", "Led is now " + state);
   });
 
-//  server.on("/relay", []() {
-//    String op = server.arg("op");
-//    String pin = server.arg("pin");
-//    int pinId = atoi(pin.c_str());
-//    if (op == "off") {
-//      switch (pinId) {
-//        case 0:
-//          digitalWrite(PORT_RELAY1, RELAY_OFF);
-//          break;
-//        case 1:
-//          digitalWrite(PORT_RELAY2, RELAY_OFF);
-//          break;
-//        case 2:
-//          digitalWrite(PORT_RELAY3, RELAY_OFF);
-//          break;
-//        case 3:
-//          digitalWrite(PORT_RELAY4, RELAY_OFF);
-//          break;
-//        case 4:
-//          digitalWrite(PORT_RELAY5, RELAY_OFF);
-//          break;
-//        case 5:
-//          digitalWrite(PORT_RELAY6, RELAY_OFF);
-//          break;
-//        default:
-//          server.send(200, "text/plain", "pin not available");
-//          return;
-//      }
-//      server.send(200, "text/plain", "success");
-//    }
-//    else if (op == "on") {
-//      switch (pinId) {
-//        case 0:
-//          digitalWrite(PORT_RELAY1, RELAY_ON);
-//          break;
-//        case 1:
-//          digitalWrite(PORT_RELAY2, RELAY_ON);
-//          break;
-//        case 2:
-//          digitalWrite(PORT_RELAY3, RELAY_ON);
-//          break;
-//        case 3:
-//          digitalWrite(PORT_RELAY4, RELAY_ON);
-//          break;
-//        case 4:
-//          digitalWrite(PORT_RELAY5, RELAY_ON);
-//          break;
-//        case 5:
-//          digitalWrite(PORT_RELAY6, RELAY_ON);
-//          break;
-//        default:
-//          server.send(200, "text/plain", "pin not available");
-//          return;
-//      }
-//    }
-//    else {
-//      server.send(200, "text/plain", "operation not supported");
-//    }
-//  });
+  server.on("/relay", []() {
+    String op = server.arg("op");
+    String pin = server.arg("pin");
+    int pinId = atoi(pin.c_str());
+    if (op == "off") {
+      switch (pinId) {
+        case 0:
+          digitalWrite(PORT_RELAY1, RELAY_OFF);
+          break;
+        case 1:
+          digitalWrite(PORT_RELAY2, RELAY_OFF);
+          break;
+        case 2:
+          digitalWrite(PORT_RELAY3, RELAY_OFF);
+          break;
+        case 3:
+          digitalWrite(PORT_RELAY4, RELAY_OFF);
+          break;
+        case 4:
+          digitalWrite(PORT_RELAY5, RELAY_OFF);
+          break;
+        case 5:
+          digitalWrite(PORT_RELAY6, RELAY_OFF);
+          break;
+        default:
+          server.send(200, "text/plain", "pin not available");
+          return;
+      }
+      server.send(200, "text/plain", "success off");
+    }
+    else if (op == "on") {
+      switch (pinId) {
+        case 0:
+          digitalWrite(PORT_RELAY1, RELAY_ON);
+          break;
+        case 1:
+          digitalWrite(PORT_RELAY2, RELAY_ON);
+          break;
+        case 2:
+          digitalWrite(PORT_RELAY3, RELAY_ON);
+          break;
+        case 3:
+          digitalWrite(PORT_RELAY4, RELAY_ON);
+          break;
+        case 4:
+          digitalWrite(PORT_RELAY5, RELAY_ON);
+          break;
+        case 5:
+          digitalWrite(PORT_RELAY6, RELAY_ON);
+          break;
+        default:
+          server.send(200, "text/plain", "pin not available");
+          return;
+      }
+      server.send(200, "text/plain", "success on");
+    }
+    else {
+      server.send(200, "text/plain", "operation not supported");
+    }
+  });
 
   server.onNotFound(handleNotFound);
 
