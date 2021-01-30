@@ -90,7 +90,7 @@ void output() {
                 Serial.println("m");*/
                 lcd.setCursor(0, 0);
                 char out[17];
-                sprintf(out, "%2dC,%4dH,%3d%%  ", temp, pressure, humidity);
+                sprintf(out, "%2uC,%4uH,%3u%%  ", temp, pressure, humidity);
                 lcd.print(out);
             }       
         }  else if (ch == 0x4) {
@@ -109,7 +109,7 @@ void output() {
                 Serial.println(" lux");*/
                 lcd.setCursor(0, 1);
                 char out[17];
-                sprintf(out, "%d LUX     ", lux);
+                sprintf(out, "%lu LUX     ", lux);
                 lcd.print(out);
             }
         } else { // 未知数据
