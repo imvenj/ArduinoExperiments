@@ -35,7 +35,7 @@ typedef struct
 float temp = 0.0f;
 float pressure = 0.0f;
 float humidity = 0.0f;
-float alt = 0.0f;
+uint16_t alt = 0;
 float lux = 0.0f;
 
 void setup() {
@@ -100,7 +100,7 @@ void output() {
                 temp = (float)Bme.Temp/100.0;
                 pressure = (float)Bme.P/10000.0;
                 humidity = (float)Bme.Hum/100.0;
-                alt = (float)Bme.Alt/100.0;
+                alt = Bme.Alt;
                 /*
                 Serial.print("Temp: ");
                 Serial.print( (float)Bme.Temp/100);
@@ -160,21 +160,21 @@ void drawData() {
   Serial.println("-----");
 
   char n_str[15];
-  char s_temp[15], s_pres[20], s_humi[15], s_alt[15], s_lux[20];
-  sprintf(s_temp, "Temp: %s%cC", dtostrf(temp, 0, 1, n_str), (char)0xF8);
-  Serial.println(s_temp);
-  display.println(s_temp);
-  sprintf(s_pres, "Pres: %shPa", dtostrf(pressure, 0, 1, n_str));
-  Serial.println(s_pres);
-  display.println(s_pres);
-  sprintf(s_humi, "Humi: %s%%", dtostrf(humidity, 0, 1, n_str));
-  Serial.println(s_humi);
-  display.println(s_humi);
-  sprintf(s_humi, "Alti: %sm", dtostrf(alt, 0, 1, n_str));
-  Serial.println(s_humi);
-  display.println(s_humi);
-  sprintf(s_alt, "Brit: %slux", dtostrf(lux, 0, 2, n_str));
-  Serial.println(s_alt);
-  display.println(s_alt);
+  char out[20];
+  sprintf(out, "Temp: %s%cC", dtostrf(temp, 0, 1, n_str), (char)0xF8);
+  Serial.println(out);
+  display.println(out);
+  sprintf(out, "Pres: %shPa", dtostrf(pressure, 0, 1, n_str));
+  Serial.println(out);
+  display.println(out);
+  sprintf(out, "Humi: %s%%", dtostrf(humidity, 0, 1, n_str));
+  Serial.println(out);
+  display.println(out);
+  sprintf(out, "Alti: %dM", alt);
+  Serial.println(out);
+  display.println(out);
+  sprintf(out, "Brit: %sLx", dtostrf(lux, 0, 2, n_str));
+  Serial.println(out);
+  display.println(out);
   display.display();
 }
