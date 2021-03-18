@@ -1,6 +1,6 @@
 #include <Adafruit_ssd1306syp.h>
-#define SDA_PIN 8
-#define SCL_PIN 9
+#define SDA_PIN 21
+#define SCL_PIN 22
 Adafruit_ssd1306syp display(SDA_PIN,SCL_PIN);
 void setup()
 {
