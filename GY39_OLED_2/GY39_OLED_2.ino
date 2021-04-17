@@ -33,10 +33,15 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #include "TimerInterrupt.h"
 
-// Turn on for 5s
-#define TIMER1_INTERVAL_MS        5000L
+// Turn on for 20s
+#define TIMER1_INTERVAL_MS        20000L
 
 volatile boolean isDisplayOn = true;
+
+// If you want custom output interval set to 0
+#define CONTINUIOUS_SENSOR_OUTPUT 0
+// Set custom output interval to 1500 ms
+#define SENSOR_OUTPUT_INTERVAL 1500
 
 unsigned char Re_buf[15],counter=0;
 unsigned char sign=0;
@@ -63,7 +68,7 @@ void setupTimerInterrupt() {
     Serial.println("Starting  ITimer1 OK, millis() = " + String(millis()));
   }
   else {
-    Serial.println("Can't set ITimer1. Select another freq. or timer");
+    Serial.println(F("Can't set ITimer1. Select another freq. or timer"));
   }
 }
 
@@ -75,14 +80,14 @@ void setupButtonInterrupt() {
 }
 
 void turnOn() {
-  Serial.println("Turn on.");
+  Serial.println(F("Turn on."));
   if (isDisplayOn) { return; }
   isDisplayOn = true;
   ITimer1.resumeTimer();
 }
 
 void turnOff() {
-  Serial.println("Turn off.");
+  Serial.println(F("Turn off."));
   if (!isDisplayOn) { return; }
   isDisplayOn = false;
   stopTimer();
@@ -108,12 +113,27 @@ void setup() {
   delay(1); 
   
   Serial.write(0XA5); 
-  Serial.write(0X83);    //初始化,连续输出模式
-  Serial.write(0X28);    //初始化,连续输出模式
+  // Serial.write(0X83);    //初始化,连续输出模式
+  // Serial.write(0X28);    //初始化,连续输出模式
+  Serial.write(0X00);    //初始化,连续输出模式
+  Serial.write(0XA5);    //初始化,连续输出模式
 }
 
 void loop() {
+  #if CONTINUIOUS_SENSOR_OUTPUT
   serialEvent();
+  #else
+  Serial.write(0XA5);
+  Serial.write(0X51);
+  Serial.write(0XF6);
+  delay(50);
+  serialEvent();
+  Serial.write(0XA5);
+  Serial.write(0X52);
+  Serial.write(0XF7);
+  serialEvent();
+  delay(SENSOR_OUTPUT_INTERVAL);
+  #endif
 }
 
 void serialEvent() {
@@ -131,6 +151,9 @@ void serialEvent() {
             counter=0; //重新赋值，准备下一帧数据的接收 
             sign=1;
             output();
+            #if !CONTINUIOUS_SENSOR_OUTPUT
+            break;
+            #endif
         }
     }
 }
