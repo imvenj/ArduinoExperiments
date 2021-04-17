@@ -1,7 +1,6 @@
 // This Project is for ESP-32
 
 #include <esp32-hal-timer.h>
-#define SIG 18
 #define INTP 19
 
 
@@ -20,9 +19,7 @@ void IRAM_ATTR onTimer() {
 void setup() { 
   Serial.begin(115200);
   // put your setup code here, to run once:
-  pinMode(OUTPUT, SIG);
-  pinMode(INPUT, INTP);
-  digitalWrite(SIG, HIGH);
+  pinMode(INTP, INPUT); // Use pull up to signal pin interrupt.
   attachInterrupt(digitalPinToInterrupt(INTP), turnOn, CHANGE);
 }
 
@@ -34,7 +31,7 @@ void loop() {
 void startTimer() {
   timer = timerBegin(0, 80, true);
   timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, 10000000, true);
+  timerAlarmWrite(timer, 3000000, true);
   timerAlarmEnable(timer);
 }
 
@@ -43,6 +40,7 @@ void stopTimer() {
 }
 
 void turnOn() {
+  Serial.println("Pin interrupt.");
   if (displayState) { return; }
   Serial.println("Turn on.");
   displayState = true;
