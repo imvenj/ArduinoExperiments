@@ -52,7 +52,7 @@ volatile bool displayState = true;
 // Set custom output interval to 1500 ms
 #define SENSOR_OUTPUT_INTERVAL 1500
 #define OLED_ON_INTERVAL 20000000
-#define WIFI_OUTPUT_INTERVAL 10000
+#define WIFI_OUTPUT_INTERVAL 30000
 
 hw_timer_t * timer0 = NULL;
 portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
@@ -106,7 +106,7 @@ void sendDataWrapper() {
 
 WiFiMulti WiFiMulti;
 WiFiClient client;
-IPAddress server(192,168,31,155);
+IPAddress server(192,168,31,172);
 char ssid[] = "Pangea";
 char pass[] = "fuckgfww";
 
@@ -139,7 +139,7 @@ void setupWifi() {
 }
 
 void sendDataToServer(const char *weather_info) {
-  if (client.connect(server, 4567)) {
+  if (client.connect(server, 8080)) {
     // Serial.println("server connected");
     // Make a HTTP request:
     char req_data[124];
