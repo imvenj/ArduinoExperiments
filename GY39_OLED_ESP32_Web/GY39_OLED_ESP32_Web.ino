@@ -13,6 +13,7 @@ GND----GND
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Ticker.h>
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -46,17 +47,20 @@ float lux = 0.0f;
 volatile bool displayState = true;
 
 // If you want custom output interval set to 0
+// FIXME: when set to zero, strange non output bug occur.
 #define CONTINUIOUS_SENSOR_OUTPUT 1
 // Set custom output interval to 1500 ms
 #define SENSOR_OUTPUT_INTERVAL 1500
+#define OLED_ON_INTERVAL 20000000
+#define WIFI_OUTPUT_INTERVAL 10000
 
-hw_timer_t * timer = NULL;
-portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+hw_timer_t * timer0 = NULL;
+portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
 
-void IRAM_ATTR onTimer() {
-  portENTER_CRITICAL_ISR(&timerMux);
+void IRAM_ATTR onTimer0() {
+  portENTER_CRITICAL_ISR(&timerMux0);
   turnOff();
-  portEXIT_CRITICAL_ISR(&timerMux);
+  portEXIT_CRITICAL_ISR(&timerMux0);
 }
 
 void setupButtonInterrupt() {
@@ -64,46 +68,92 @@ void setupButtonInterrupt() {
   attachInterrupt(digitalPinToInterrupt(INTP), turnOn, CHANGE);
 }
 
-void startTimer() {
-  timer = timerBegin(0, 80, true);
-  timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, 5000000, true);
-  timerAlarmEnable(timer);
+void startTimer0() {
+  timer0 = timerBegin(0, 80, true);
+  timerAttachInterrupt(timer0, &onTimer0, true);
+  timerAlarmWrite(timer0, OLED_ON_INTERVAL, true);
+  timerAlarmEnable(timer0);
 }
 
-void stopTimer() {
-  timerEnd(timer);
+void stopTimer0() {
+  timerEnd(timer0);
 }
 
 void turnOn() {
   if (displayState) { return; }
   Serial.println("Turn on.");
   displayState = true;
-  startTimer();
+  startTimer0();
 }
 
 void turnOff() {
   Serial.println("Turn off.");
   displayState = false;
-  stopTimer();
+  stopTimer0();
 }
 
-void setup() {
-  Serial.begin(9600);
+Ticker sendDataTicker;
 
-  setupButtonInterrupt();
-  startTimer();
-  
-  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Don't proceed, loop forever
+char weather_data[100];
+void sendDataWrapper() {
+  sendDataToServer(weather_data);
+}
+
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WiFiMulti.h>
+#include <WebServer.h>
+
+WiFiMulti WiFiMulti;
+WiFiClient client;
+IPAddress server(192,168,31,155);
+char ssid[] = "Pangea";
+char pass[] = "fuckgfww";
+
+void setupWifi() {
+  // We start by connecting to a WiFi network
+  WiFiMulti.addAP(ssid, pass);
+
+  Serial.println();
+  Serial.println();
+  Serial.print("Waiting for WiFi... ");
+
+  drawErrorMessage("Waiting for Wifi...");
+
+  while(WiFiMulti.run() != WL_CONNECTED) {
+      Serial.print(".");
+      delay(500);
   }
 
-  display.clearDisplay();
+  drawErrorMessage("Wifi connected!");
+  delay(500);
   
-  delay(1); 
-  
-  Serial.write(0XA5); 
+  startTimer0();
+  // Send data
+  sendDataTicker.attach_ms(WIFI_OUTPUT_INTERVAL, sendDataWrapper);
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void sendDataToServer(const char *weather_info) {
+  if (client.connect(server, 4567)) {
+    // Serial.println("server connected");
+    // Make a HTTP request:
+    char req_data[124];
+    sprintf(req_data, "GET /send?data=%s HTTP/1.1", weather_info);
+    client.println(req_data);
+    client.println("Host: venj.me");
+    client.println("User-Agent: ArduinoWiFi/1.1");
+    client.println("Connection: close");
+    client.println();
+  }
+}
+
+void setupSensor() {
+  Serial.write(0XA5);
   #if CONTINUIOUS_SENSOR_OUTPUT
   Serial.write(0X83);    //初始化,连续输出模式
   Serial.write(0X28);    //初始化,连续输出模式
@@ -111,6 +161,24 @@ void setup() {
   Serial.write(0X00); 
   Serial.write(0XA5);
   #endif
+}
+
+void setupDisplay() {
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+  display.clearDisplay();
+  delay(1);
+}
+
+void setup() {
+  Serial.begin(9600);
+  setupSensor();
+  setupButtonInterrupt();
+  setupDisplay();
+  setupWifi();
 }
 
 void loop() {
@@ -202,7 +270,7 @@ void output() {
         } else { // 未知数据
           drawErrorMessage("Unknown data.");
         }
-
+        
         sign=0;
     }
 }
@@ -224,8 +292,22 @@ void drawErrorMessage(const char *message) {
 }
 
 void drawData() {
+  // Format data.
+  char n_str[15];
+  char temp_str[15];
+  char pres_str[15];
+  char humi_str[15];
+  char alti_str[15];
+  char brit_str[15];
+  sprintf(temp_str, "%s", dtostrf(temp, 0, 1, n_str));
+  sprintf(pres_str, "%s", dtostrf(pressure, 0, 1, n_str));
+  sprintf(humi_str, "%s", dtostrf(humidity, 0, 1, n_str));
+  sprintf(alti_str, "%d", alt);
+  sprintf(brit_str, "%s", dtostrf(lux, 0, 2, n_str));
+  sprintf(weather_data, "%s,%s,%s,%s,%s", temp_str, pres_str, humi_str, alti_str, brit_str);
+
   display.clearDisplay();
-  
+
   if (!displayState) { // Turn off display
     display.display();
     return;
@@ -236,21 +318,21 @@ void drawData() {
   display.setCursor(0, 0);     // Start at top-left corner
   display.cp437(true);         // Use full 256 char 'Code Page 437' font
 
-  char n_str[15];
+  
   char out[20];
-  sprintf(out, "Temp: %s%cC", dtostrf(temp, 0, 1, n_str), (char)0xF8);
+  sprintf(out, "Temp: %s%cC", temp_str, (char)0xF8);
   // Serial.println(out);
   display.println(out);
-  sprintf(out, "Pres: %shPa", dtostrf(pressure, 0, 1, n_str));
+  sprintf(out, "Pres: %shPa", pres_str);
   // Serial.println(out);
   display.println(out);
-  sprintf(out, "Humi: %s%%", dtostrf(humidity, 0, 1, n_str));
+  sprintf(out, "Humi: %s%%", humi_str);
   // Serial.println(out);
   display.println(out);
   sprintf(out, "Alti: %dM", alt);
   // Serial.println(out);
   display.println(out);
-  sprintf(out, "Brit: %sLx", dtostrf(lux, 0, 2, n_str));
+  sprintf(out, "Brit: %sLx", brit_str);
   // Serial.println(out);
   display.println(out);
   display.display();

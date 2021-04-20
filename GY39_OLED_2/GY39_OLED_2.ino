@@ -39,7 +39,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 volatile boolean isDisplayOn = true;
 
 // If you want custom output interval set to 0
-#define CONTINUIOUS_SENSOR_OUTPUT 0
+#define CONTINUIOUS_SENSOR_OUTPUT 1
 // Set custom output interval to 1500 ms
 #define SENSOR_OUTPUT_INTERVAL 1500
 
@@ -112,11 +112,15 @@ void setup() {
   
   delay(1); 
   
-  Serial.write(0XA5); 
-  // Serial.write(0X83);    //初始化,连续输出模式
-  // Serial.write(0X28);    //初始化,连续输出模式
-  Serial.write(0X00);    //初始化,连续输出模式
-  Serial.write(0XA5);    //初始化,连续输出模式
+  Serial.write(0XA5);
+  
+  #if CONTINUIOUS_SENSOR_OUTPUT
+  Serial.write(0X83);    //初始化,连续输出模式
+  Serial.write(0X28);    //初始化,连续输出模式
+  #else
+  Serial.write(0X00); 
+  Serial.write(0XA5);
+  #endif
 }
 
 void loop() {
